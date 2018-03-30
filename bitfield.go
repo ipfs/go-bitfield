@@ -16,6 +16,13 @@ func NewBitfield(size int) Bitfield {
 	return make([]byte, size/8)
 }
 
+// FromBytes constructs a new bitfield from a serialized bitfield.
+func FromBytes(size int, bits []byte) Bitfield {
+	bf := NewBitfield(size)
+	copy(bf[len(bf)-len(bits):], bits)
+	return bf
+}
+
 func (bf Bitfield) offset(i int) (uint, uint8) {
 	return uint(len(bf)) - (uint(i) / 8) - 1, uint8(i) % 8
 }
