@@ -59,7 +59,7 @@ func (bf Bitfield) UnsetBit(i int) {
 	bf[idx] &= 0xFF ^ (1 << off)
 }
 
-// Set sets the bits to the given byte array.
+// SetBytes sets the bits to the given byte array.
 //
 // Panics if 'b' is larger than the bitfield.
 func (bf Bitfield) SetBytes(b []byte) {
