@@ -35,6 +35,7 @@ func TestExhaustive24(t *testing.T) {
 			}
 		}
 		if !bytes.Equal(bint.Bytes(), bf.Bytes()) {
+			t.Logf("%v %v", bint.Bytes(), bf.Bytes())
 			t.Fatal("big int and bitfield not equal")
 		}
 		for i := 0; i < 24; i++ {
@@ -138,8 +139,20 @@ func BenchmarkOnes(t *testing.B) {
 	}
 }
 
+func BenchmarkBytes(t *testing.B) {
+	bfa := NewBitfield(211)
+	bfb := NewBitfield(211)
+	for j := 0; j*4 < 211; j++ {
+		bfa.SetBit(j * 4)
+	}
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		bfb.SetBytes(bfa.Bytes())
+	}
+}
+
 func BenchmarkBigInt(t *testing.B) {
-	bint := new(big.Int).SetBytes(make([]byte, 128/8))
+	bint := new(big.Int).SetBytes(make([]byte, benchmarkSize/8))
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		if bint.Bit(i%benchmarkSize) != 0 {
