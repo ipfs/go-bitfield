@@ -90,13 +90,14 @@ func TestBitfield(t *testing.T) {
 	}
 }
 
-var benchmarkSize = 256
+var benchmarkSize = 512
 
 func BenchmarkBitfield(t *testing.B) {
 	bf := NewBitfield(benchmarkSize)
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		if bf.Bit(i % benchmarkSize) {
-			t.Fatal("bad")
+			t.Fatal("bad", i)
 		}
 		bf.SetBit(i % benchmarkSize)
 		bf.UnsetBit(i % benchmarkSize)
@@ -106,7 +107,7 @@ func BenchmarkBitfield(t *testing.B) {
 		bf.UnsetBit(i % benchmarkSize)
 		bf.SetBit(i % benchmarkSize)
 		if !bf.Bit(i % benchmarkSize) {
-			t.Fatal("bad")
+			t.Fatal("bad", i)
 		}
 		bf.UnsetBit(i % benchmarkSize)
 		bf.SetBit(i % benchmarkSize)
@@ -116,13 +117,30 @@ func BenchmarkBitfield(t *testing.B) {
 		bf.SetBit(i % benchmarkSize)
 		bf.UnsetBit(i % benchmarkSize)
 		if bf.Bit(i % benchmarkSize) {
-			t.Fatal("bad")
+			t.Fatal("bad", i)
+		}
+	}
+}
+
+func BenchmarkOnes(t *testing.B) {
+	bf := NewBitfield(benchmarkSize)
+	t.ResetTimer()
+	for i := 0; i < t.N; i++ {
+		for j := 0; j*4 < benchmarkSize; j++ {
+			if bf.Ones() != j {
+				t.Fatal("bad", i)
+			}
+			bf.SetBit(j * 4)
+		}
+		for j := 0; j*4 < benchmarkSize; j++ {
+			bf.UnsetBit(j * 4)
 		}
 	}
 }
 
 func BenchmarkBigInt(t *testing.B) {
 	bint := new(big.Int).SetBytes(make([]byte, 128/8))
+	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		if bint.Bit(i%benchmarkSize) != 0 {
 			t.Fatal("bad")
