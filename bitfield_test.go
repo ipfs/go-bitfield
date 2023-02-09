@@ -9,7 +9,8 @@ import (
 )
 
 func TestExhaustive24(t *testing.T) {
-	bf := NewBitfield(24)
+	bf, err := NewBitfield(24)
+	assertNoError(t, err)
 	max := 1 << 24
 
 	bint := new(big.Int)
@@ -58,7 +59,8 @@ func TestExhaustive24(t *testing.T) {
 }
 
 func TestBitfield(t *testing.T) {
-	bf := NewBitfield(128)
+	bf, err := NewBitfield(128)
+	assertNoError(t, err)
 	if bf.OnesBefore(20) != 0 {
 		t.Fatal("expected no bits set")
 	}
@@ -91,10 +93,20 @@ func TestBitfield(t *testing.T) {
 	}
 }
 
+func TestBadSizeFails(t *testing.T) {
+	for _, size := range [...]int{-8, 2, 1337, -3} {
+		_, err := NewBitfield(size)
+		if err == nil {
+			t.Fatalf("missing error for %d sized bitfield", size)
+		}
+	}
+}
+
 var benchmarkSize = 512
 
 func BenchmarkBitfield(t *testing.B) {
-	bf := NewBitfield(benchmarkSize)
+	bf, err := NewBitfield(benchmarkSize)
+	assertNoError(t, err)
 	t.ResetTimer()
 	for i := 0; i < t.N; i++ {
 		if bf.Bit(i % benchmarkSize) {
@@ -123,13 +135,14 @@ func BenchmarkBitfield(t *testing.B) {
 	}
 }
 
-func BenchmarkOnes(t *testing.B) {
-	bf := NewBitfield(benchmarkSize)
-	t.ResetTimer()
-	for i := 0; i < t.N; i++ {
+func BenchmarkOnes(b *testing.B) {
+	bf, err := NewBitfield(benchmarkSize)
+	assertNoError(b, err)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		for j := 0; j*4 < benchmarkSize; j++ {
 			if bf.Ones() != j {
-				t.Fatal("bad", i)
+				b.Fatal("bad", i)
 			}
 			bf.SetBit(j * 4)
 		}
@@ -139,14 +152,16 @@ func BenchmarkOnes(t *testing.B) {
 	}
 }
 
-func BenchmarkBytes(t *testing.B) {
-	bfa := NewBitfield(211)
-	bfb := NewBitfield(211)
-	for j := 0; j*4 < 211; j++ {
+func BenchmarkBytes(b *testing.B) {
+	bfa, err := NewBitfield(216)
+	assertNoError(b, err)
+	bfb, err := NewBitfield(216)
+	assertNoError(b, err)
+	for j := 0; j*4 < 216; j++ {
 		bfa.SetBit(j * 4)
 	}
-	t.ResetTimer()
-	for i := 0; i < t.N; i++ {
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
 		bfb.SetBytes(bfa.Bytes())
 	}
 }
@@ -178,5 +193,20 @@ func BenchmarkBigInt(t *testing.B) {
 		if bint.Bit(i%benchmarkSize) != 0 {
 			t.Fatal("bad")
 		}
+	}
+}
+
+func FuzzFromBytes(f *testing.F) {
+	f.Fuzz(func(_ *testing.T, size int, bytes []byte) {
+		if size > 1<<20 { // We relly on consumers for limit checks, hopefully they understand that a New... factory allocates memory.
+			return
+		}
+		FromBytes(size, bytes)
+	})
+}
+
+func assertNoError(t testing.TB, e error) {
+	if e != nil {
+		t.Fatal(e)
 	}
 }
